@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/cloudfront"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"gopkg.in/src-d/go-git.v4"
 	"log"
@@ -12,17 +12,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
-	"github.com/aws/aws-lambda-go/lambda"
 )
 
 func hugobuild() (string, error) {
 	gitRepo := os.Getenv("GIT_REPO")
 	s3Bucket := os.Getenv("S3_BUCKET")
 	s3Region := os.Getenv("S3_REGION")
-	cfDistro := os.Getenv("CLOUDFRONT_DISTRO")
 
 	blogTmpPath := "/tmp/blog"
 	blogOutputPath := blogTmpPath + "/public"
@@ -63,39 +59,10 @@ func hugobuild() (string, error) {
 		return "", s3Err
 	}
 
-	// Invalidate Cloudfront
-	fmt.Printf("Submitting Cloudfront invalidation for distribution %s\n", cfDistro)
-	if cfErr := cloudFrontInvalidate(cfDistro); cfErr != nil {
-		log.Fatalf("Cloudfront invalidate failed with %s\n", cfErr)
-		return "", cfErr
-	}
-
 	return "SUCCESS", nil
 }
 
-func cloudFrontInvalidate(distribution string) (error) {
-	// If a cloudfront distribution is defined, submit an
-	// invalidation request
-	if distribution == "" {
-		return nil
-	}
-	invalidateBatch := &cloudfront.InvalidationBatch{}
-	invalidateBatch.SetCallerReference(strconv.Itoa(int(time.Now().Unix())))
-	paths := &cloudfront.Paths{}
-	pathStrings := []*string{aws.String("/*")}
-	paths.SetItems(pathStrings)
-	paths.SetQuantity(int64(len(pathStrings)))
-	invalidateBatch.SetPaths(paths)
-	invalidationInput := &cloudfront.CreateInvalidationInput{}
-	invalidationInput.SetDistributionId(distribution)
-	invalidationInput.SetInvalidationBatch(invalidateBatch)
-
-	cfSvc := cloudfront.New(session.New())
-	_, cfErr := cfSvc.CreateInvalidation(invalidationInput)
-	return cfErr
-}
-
-func s3Sync(s3Region string, blogOutputPath string, s3Bucket string) (error) {
+func s3Sync(s3Region string, blogOutputPath string, s3Bucket string) error {
 	// Take the built artifacts from Hugo and sync them to the S3 bucket.
 	// This code was taken from this example:
 	// https://github.com/aws/aws-sdk-go/tree/master/example/service/s3/sync
@@ -178,11 +145,20 @@ func (iter *SyncFolderIterator) UploadObject() s3manager.BatchUploadObject {
 		mimeType = "binary/octet-stream"
 	}
 
+	cacheControl := "no-cache"
+
+	if strings.Contains(mimeType, "image/") || strings.Contains(mimeType, "binary/octet-stream") {
+		cacheControl = "max-age=86400"
+	} else if strings.Contains(mimeType, "text/css") || strings.Contains(mimeType, "application/x-javascript") {
+		cacheControl = "max-age=31536000"
+	}
+
 	input := s3manager.UploadInput{
-		Bucket:      &iter.bucket,
-		Key:         &fi.key,
-		Body:        body,
-		ContentType: &mimeType,
+		Bucket:       &iter.bucket,
+		Key:          &fi.key,
+		Body:         body,
+		ContentType:  &mimeType,
+		CacheControl: &cacheControl,
 	}
 
 	return s3manager.BatchUploadObject{
