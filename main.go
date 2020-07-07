@@ -46,7 +46,7 @@ func hugobuild() (string, error) {
 	// Download the Linux 64-bit binary from here:
 	// https://github.com/gohugoio/hugo/releases
 	fmt.Printf("Running hugo at path %s\n", blogTmpPath)
-	hugoArgs := []string{"-s", blogTmpPath}
+	hugoArgs := []string{"-s", blogTmpPath, "--minify"}
 	if hugoErr := exec.Command("/var/task/hugo", hugoArgs...).Run(); hugoErr != nil {
 		log.Fatalf("Hugo run failed with %s\n", hugoErr)
 		return "", hugoErr
