@@ -1,6 +1,6 @@
 # Huh?
 
-This Go code is meant to be run in AWS Lambda and is what I use to update [my blog](https://pdp80.com), the source of which is stored on [GitHub](https://github.com/wnka/pdp80-blog) and hosted in S3 and CloudFront.
+This Go code is meant to be run in AWS Lambda and is what I use to update [my blog](https://pdp.dev), the source of which is stored on [GitHub](https://github.com/wnka/pdp80-blog) and hosted in S3 and CloudFront.
 
 # How
 
@@ -18,4 +18,3 @@ Environment variables to set
 | GIT_REPO          | The URL for the Git repository that hosts your Hugo blog    | https://github.com/wnka/pdp80-blog.git |
 | S3_BUCKET         | The S3 bucket that hosts your blog                          | pdp80.com                              |
 | S3_REGION         | The AWS region your S3 bucket lives in                      | us-east-1                              |
-| CLOUDFRONT_DISTRO | (Optional) The CloudFront that should invalidated on update | E3W5ET0Z9WW0IT                                       |
