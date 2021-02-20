@@ -148,8 +148,10 @@ func (iter *SyncFolderIterator) UploadObject() s3manager.BatchUploadObject {
 	cacheControl := "no-cache"
 
 	if strings.Contains(mimeType, "image/") || strings.Contains(mimeType, "binary/octet-stream") {
-		cacheControl = "max-age=86400"
+		cacheControl = "max-age=31536000"
 	} else if strings.Contains(mimeType, "text/css") || strings.Contains(mimeType, "application/x-javascript") {
+		cacheControl = "max-age=31536000"
+	} else if strings.Contains(mimeType, "application/font") {
 		cacheControl = "max-age=31536000"
 	}
 
